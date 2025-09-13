@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>شعار حيّ – Three.js</title>
+  <style>
+    html,body {height:100%; margin:0; background: radial-gradient(1200px 800px at 70% 20%, #eef2ff, #e9f4ff 40%, #dfe8ff 60%, #dce6ff 100%);}
+    #app {position:fixed; inset:0; overflow:hidden;}
+    .hint{
+      position:fixed; left:1rem; bottom:1rem; color:#345; background:#ffffffcc;
+      backdrop-filter: blur(6px); padding:.6rem .8rem; border-radius:10px; font: 14px/1.3 system-ui, sans-serif;
+      box-shadow: 0 8px 30px rgba(30,60,90,.15);
+    }
+  </style>
+
+  <!-- Import map لنسخة ES Modules من Three.js -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <div class="hint">حرّك المؤشر ✨ — انقر للانفجار الخفيف</div>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    // === 1) إعداد المشهد والكاميرا والمُصيّر ===
+    const app = document.getElementById('app');
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    app.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.set(0, 0, 180);
+
+    // إضاءة خفيفة لإبراز الوهج مع النقاط
+    const light = new THREE.AmbientLight(0xffffff, 0.9);
+    scene.add(light);
+
+    // === 2) مصدر الشعار (Data URL مضمن) ===
+const logoDataURL = "logo.png";
+    .replace("{{B64_HERE}}", `
+{{B64_DATA}}
+`.trim());
+
+    // === 3) نقرأ الصورة إلى Canvas لنحوّلها لنقاط ===
+    const img = new Image();
+    img.src = logoDataURL;
+    img.onload = () => {
+      const scaleTarget = Math.min(window.innerWidth, window.innerHeight) * 0.9;
+      buildParticlesFromImage(img, scaleTarget);
+    };
+
+    let points, basePositions, velocities;
+    const mouse = new THREE.Vector2(0, 0);
+    const mouseWorld = new THREE.Vector3();
+    let explode = 0;
+
+    function buildParticlesFromImage(image, scaleTarget) {
+      const c = document.createElement('canvas');
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      // نحدد دقّة أخذ العينات لتقليل عدد النقاط (الأداء)
+      const maxW = 420;             // جرّب رفعها لجودة أعلى وعدد نقاط أكثر
+      const ratio = image.width > maxW ? maxW / image.width : 1;
+      c.width  = Math.round(image.width * ratio);
+      c.height = Math.round(image.height * ratio);
+      ctx.drawImage(image, 0, 0, c.width, c.height);
+
+      const imgData = ctx.getImageData(0, 0, c.width, c.height).data;
+
+      const positions = [];
+      const colors = [];
+
+      // عَيّنة كل n بكسل
+      const step = 2; // قلّل الرقم لزيادة عدد النقاط
+      for (let y = 0; y < c.height; y += step) {
+        for (let x = 0; x < c.width; x += step) {
+          const i = (y * c.width + x) * 4;
+          const r = imgData[i], g = imgData[i + 1], b = imgData[i + 2], a = imgData[i + 3];
+
+          // نعتبر البكسل جزءاً من الشعار إذا كان "غير أبيض" (عتبة)
+          const lum = (r + g + b) / 3;
+          const isInk = a > 180 && lum < 240; // تجاهُل الخلفية البيضاء
+          if (!isInk) continue;
+
+          // نطبّع الإحداثيات إلى المنتصف
+          const px = x - c.width / 2;
+          const py = -(y - c.height / 2); // قلب Y
+
+          positions.push(px, py, 0);
+
+          // لون أزرق مائل + تدرّج بسيط حسب الإضاءة
+          const tint = 0.75 + (200 - lum) / 900; // بين ~0.55 و 1
+          const col = new THREE.Color().setHSL(0.60, 0.75, 0.40 * tint); // حول الأزرق
+          colors.push(col.r, col.g, col.b);
+        }
+      }
+
+      // قياس الشعار على الشاشة
+      const bounds = new THREE.Box3();
+      bounds.setFromArray(new Float32Array(positions));
+      const size = new THREE.Vector3();
+      bounds.getSize(size);const s = scaleTarget / Math.max(size.x, size.y);
+      for (let i = 0; i < positions.length; i += 3) {
+        positions[i]     *= s;
+        positions[i + 1] *= s;
+        // ترك z=0 كبداية
+      }
+
+      basePositions = new Float32Array(positions); // للحفظ
+      velocities = new Float32Array(basePositions.length);
+      for (let i = 0; i < velocities.length; i++) velocities[i] = (Math.random() - 0.5) * 0.2;
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3));
+
+      // نسيج دائري صغير للنقاط (نصنعه على الطاير)
+      const dotTex = makeDotTexture();
+
+      const material = new THREE.PointsMaterial({
+        size: 2.2,
+        map: dotTex,
+        transparent: true,
+        alphaTest: 0.01,
+        depthWrite: false,
+        vertexColors: true
+      });
+
+      points = new THREE.Points(geometry, material);
+      scene.add(points);
+
+      // لمسة وهج خفيف عبر إضافة نسخة أكبر شفافة
+      const glowMat = material.clone();
+      glowMat.size = 6;
+      glowMat.opacity = 0.18;
+      const glow = new THREE.Points(geometry, glowMat);
+      scene.add(glow);
+
+      animate();
+    }
+
+    function makeDotTexture(size = 128) {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      const g = ctx.createRadialGradient(size/2, size/2, 1, size/2, size/2, size/2);
+      g.addColorStop(0.0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.5, 'rgba(255,255,255,.6)');
+      g.addColorStop(1.0, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, size/2, 0, Math.PI*2);
+      ctx.fill();
+      const tex = new THREE.CanvasTexture(c);
+      tex.anisotropy = 4;
+      return tex;
+    }
+
+    // === 4) تفاعل الماوس ===
+    window.addEventListener('mousemove', (e) => {
+      const x = (e.clientX / window.innerWidth)  * 2 - 1;
+      const y = -(e.clientY / window.innerHeight) * 2 + 1;
+      mouse.set(x, y);
+    });
+    window.addEventListener('click', () => {
+      explode = 1.0; // نبضة انفجار صغيرة
+    }, { passive: true });
+
+    // === 5) حلقة الرسم والحركة ===
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      if (points) {
+        const pos = points.geometry.attributes.position.array;
+
+        // تحويل موضع الماوس لشبه-عالمي (تقريبي)
+        camera.getWorldDirection(mouseWorld.set(0,0,-1));
+        // تأثير موجة / جذب-تنافر
+        for (let i = 0; i < pos.length; i += 3) {
+          const ox = basePositions[i];
+          const oy = basePositions[i + 1];
+          const oz = 0;
+
+          // ضوضاء لطيفة
+          const n = Math.sin(0.7 * t + i * 0.0007) * 0.6;
+
+          // مجال تأثير الماوس (Gaussian falloff)
+          const mx = mouse.x * window.innerWidth * 0.4;
+          const my = mouse.y * window.innerHeight * 0.4;
+          const dx = ox - mx;
+          const dy = oy - my;
+          const dist2 = dx*dx + dy*dy;
+          const influence = 40 * Math.exp(-dist2 / (window.innerWidth*0.55));
+
+          // انفجار لحظي عند النقر
+          const ex = explode * (dx) * 0.015;
+          const ey = explode * (dy) * 0.015;
+          const ez = explode * 6.0;
+
+          // تخميد الانفجار تدريجياً
+          explode *= 0.92;
+
+          // سرعة طفيفة للعودة للأصل
+          velocities[i]     += (- (pos[i]     - ox) - ex) * 0.015;
+          velocities[i + 1] += (- (pos[i + 1] - oy) - ey) * 0.015;
+          velocities[i + 2] += (- (pos[i + 2] - oz) - ez) * 0.02;
+
+          // إضافة تأثير الموجة/التنافر حول الماوس
+          velocities[i]     += (dx > 0 ? 1 : -1) * influence * 0.0003;
+          velocities[i + 1] += (dy > 0 ? 1 : -1) * influence * 0.0003;
+          velocities[i + 2] += (influence * 0.03 + n - pos[i + 2]) * 0.02;
+
+          // تكامل بسيط
+          pos[i]     += velocities[i]     * 0.9;
+          pos[i + 1] += velocities[i + 1] * 0.9;pos[i + 2] += velocities[i + 2] * 0.9;
+        }
+
+        points.geometry.attributes.position.needsUpdate = true;
+
+        // بارالاكس للكاميرا استناداً للماوس
+        camera.position.x += (mouse.x * 20 - camera.position.x) * 0.04;
+        camera.position.y += (mouse.y * 10 - camera.position.y) * 0.04;
+        camera.lookAt(0, 0, 0);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // === 6) المقياس والاستجابة لتغيير الحجم ===
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

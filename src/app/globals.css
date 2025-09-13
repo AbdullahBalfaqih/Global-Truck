@@ -1,0 +1,292 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap');
+
+/* بعدين هنا باقي الأكواد */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    @apply font-sans;
+}
+
+
+@layer base {
+    :root {
+        --background: 0 0% 87.8%; /* Light gray #E0E0E0 */
+        --foreground: 0 0% 3.9%; /* Black */
+
+        --card: 0 0% 100%; /* White */
+        --card-foreground: 0 0% 3.9%;
+        --popover: 0 0% 100%; /* White */
+        --popover-foreground: 0 0% 3.9%;
+        --primary: 180 100% 25%; /* Teal #008080 */
+        --primary-foreground: 0 0% 98%; /* White-ish */
+
+        --secondary: 0 0% 96.1%; /* Default very light gray - for secondary buttons */
+        --secondary-foreground: 0 0% 9%; /* Default dark gray */
+
+        --muted: 0 0% 96.1%; /* Default very light gray - for muted backgrounds */
+        --muted-foreground: 0 0% 45.1%; /* Default medium gray - for muted text */
+
+        --accent: 51 100% 50%; /* Gold #FFD700 */
+        --accent-foreground: 0 0% 3.9%; /* Black */
+
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 80%; /* Slightly darker gray for borders */
+        --input: 0 0% 93%; /* Lighter input field border */
+        --ring: 180 100% 25%; /* Teal for focus rings */
+
+        --chart-1: 180 76% 61%;
+        --chart-2: 190 58% 39%;
+        --chart-3: 200 37% 24%;
+        --chart-4: 50 74% 66%;
+        --chart-5: 30 87% 67%;
+        --radius: 0.5rem;
+        /* Sidebar specific colors */
+        --sidebar-background: 0 0% 98%; /* Almost white */
+        --sidebar-foreground: 0 0% 20%; /* Dark gray text */
+        --sidebar-primary: 180 70% 40%; /* Darker teal for active item background */
+        --sidebar-primary-foreground: 0 0% 98%; /* White text for active item */
+        --sidebar-accent: 180 20% 92%; /* Very light teal for hover background */
+        --sidebar-accent-foreground: 180 100% 25%; /* Main teal text for hover */
+        --sidebar-border: 0 0% 85%; /* Light border for sidebar elements */
+        --sidebar-ring: 180 100% 25%; /* Teal for focus rings within sidebar */
+    }
+
+    .dark {
+        --background: 0 0% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --popover: 0 0% 3.9%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 180 100% 35%; /* Lighter Teal for dark mode */
+        --primary-foreground: 0 0% 98%;
+        --secondary: 0 0% 14.9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --accent: 51 100% 60%; /* Lighter Gold for dark mode */
+        --accent-foreground: 0 0% 3.9%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 14.9%;
+        --input: 0 0% 14.9%;
+        --ring: 180 100% 35%; /* Lighter Teal for focus rings */
+        --chart-1: 180 70% 50%;
+        --chart-2: 190 60% 45%;
+        --chart-3: 200 80% 55%;
+        --chart-4: 50 65% 60%;
+        --chart-5: 30 75% 55%;
+        /* Sidebar specific colors for dark mode */
+        --sidebar-background: 240 5.9% 10%; /* Dark */
+        --sidebar-foreground: 0 0% 80%; /* Light gray text */
+        --sidebar-primary: 180 100% 30%; /* Teal for active item background */
+        --sidebar-primary-foreground: 0 0% 98%; /* White text for active item */
+        --sidebar-accent: 240 3.7% 15.9%; /* Slightly lighter dark for hover */
+        --sidebar-accent-foreground: 180 100% 45%; /* Brighter teal text for hover */
+        --sidebar-border: 240 3.7% 20%;
+        --sidebar-ring: 180 100% 35%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    @media print {
+        *,
+        *::before,
+        *::after {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: white !important;
+            color: black !important;
+            font-size: 10pt; /* Base font size for print */
+        }
+
+        .print-hide {
+            display: none !important;
+        }
+
+        main.print-main-content, .printable-report-area {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            border: none !important;
+            box-shadow: none !important;
+            background-color: white !important;
+        }
+
+        .parcel-label-print-container {
+            width: 10cm;
+            height: 7.5cm;
+            margin: auto;
+            padding: 0;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            page-break-inside: avoid;
+        }
+
+            .parcel-label-print-container > div {
+                margin: 0;
+                width: 100%;
+                height: 100%;
+                border: 1px solid black !important;
+            }
+
+        .manifest-print-area, .payslip-print-area, .printable-report-area {
+            padding: 10px !important;
+            margin: 0 !important;
+            width: 100% !important;
+            font-size: 9pt;
+            color: black !important;
+            background-color: white !important;
+        }
+
+            .printable-report-area h1, .printable-report-area h2, .printable-report-area h3, .printable-report-area h4 {
+                color: black !important;
+                margin-top: 0.5em;
+                margin-bottom: 0.25em;
+            }
+
+            .printable-report-area .report-header-print, .printable-report-area .report-footer-print {
+                display: block !important; /* Ensure these are visible for print */
+                text-align: center;
+                padding: 5px 0;
+                font-size: 0.8em;
+            }
+
+            .printable-report-area .report-header-print {
+                border-bottom: 1px solid #ccc;
+                margin-bottom: 10px;
+            }
+
+            .printable-report-area .report-footer-print {
+                border-top: 1px solid #ccc;
+                margin-top: 10px;
+            }
+
+
+            .manifest-print-area .print\:text-xs, .payslip-print-area .print\:text-xs, .printable-report-area .print\:text-xs {
+                font-size: 8pt !important;
+            }
+
+            .manifest-print-area .print\:text-sm, .payslip-print-area .print\:text-sm, .printable-report-area .print\:text-sm {
+                font-size: 9pt !important;
+            }
+
+            .manifest-print-area .print\:text-lg, .payslip-print-area .print\:text-lg, .printable-report-area .print\:text-lg {
+                font-size: 12pt !important;
+            }
+
+            .manifest-print-area .print\:text-xl, .payslip-print-area .print\:text-xl, .printable-report-area .print\:text-xl {
+                font-size: 14pt !important;
+            }
+
+            .manifest-print-area .print\:p-0, .payslip-print-area .print\:p-0, .printable-report-area .print\:p-0 {
+                padding: 0 !important;
+            }
+
+            .manifest-print-area .print\:p-1, .payslip-print-area .print\:p-1, .printable-report-area .print\:p-1 {
+                padding: 2px !important;
+            }
+
+            .manifest-print-area .print\:p-2, .payslip-print-area .print\:p-2, .printable-report-area .print\:p-2 {
+                padding: 4px !important;
+            }
+
+            .manifest-print-area .print\:pb-2, .payslip-print-area .print\:pb-2, .printable-report-area .print\:pb-2 {
+                padding-bottom: 4px !important;
+            }
+
+            .manifest-print-area .print\:pt-2, .payslip-print-area .print\:pt-2, .printable-report-area .print\:pt-2 {
+                padding-top: 4px !important;
+            }
+
+            .manifest-print-area .print\:mb-1, .payslip-print-area .print\:mb-1, .printable-report-area .print\:mb-1 {
+                margin-bottom: 2px !important;
+            }
+
+            .manifest-print-area .print\:mt-1, .payslip-print-area .print\:mt-1, .printable-report-area .print\:mt-1 {
+                margin-top: 2px !important;
+            }
+
+            .manifest-print-area .print\:mt-4, .payslip-print-area .print\:mt-4, .printable-report-area .print\:mt-4 {
+                margin-top: 8px !important;
+            }
+
+            .manifest-print-area .print\:shadow-none, .payslip-print-area .print\:shadow-none, .printable-report-area .print\:shadow-none {
+                box-shadow: none !important;
+            }
+
+            .manifest-print-area .print\:border-none, .payslip-print-area .print\:border-none, .printable-report-area .print\:border-none {
+                border: none !important;
+            }
+
+            .manifest-print-area table, .payslip-print-area table, .printable-report-area table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+
+                .manifest-print-area table th,
+                .manifest-print-area table td,
+                .payslip-print-area table th,
+                .payslip-print-area table td,
+                .printable-report-area table th,
+                .printable-report-area table td {
+                    border: 1px solid #666 !important;
+                    padding: 3px !important;
+                    text-align: right !important;
+                }
+            /* This rule was overriding the blue color. It has been removed. */
+            /*
+    .manifest-print-area table th,
+    .payslip-print-area table th,
+    .printable-report-area table th {
+        background-color: #e9e9e9 !important; 
+        font-weight: bold;
+    }
+    */
+            .payslip-print-area .print\:text-\[8pt\] {
+                font-size: 8pt !important;
+            }
+
+            .payslip-print-area .print\:border-gray-300 {
+                border-color: #ccc !important;
+            }
+
+            .payslip-print-area .print\:h-10 {
+                height: 2rem !important;
+            }
+
+            .payslip-print-area .print\:mb-3 {
+                margin-bottom: 6px !important;
+            }
+
+            .payslip-print-area .print\:mt-6 {
+                margin-top: 12px !important;
+            }
+
+
+        @page {
+            size: A4 portrait;
+            margin: 0.7cm; /* Reduced margins */
+        }
+    }
+}
